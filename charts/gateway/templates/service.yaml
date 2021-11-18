@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: {{ include "gateway.fullname" . }}
+  labels:
+    {{- include "gateway.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{- toYaml .Values.service.ports | nindent 4}}
+  selector:
+    {{- include "gateway.selectorLabels" . | nindent 6 }}

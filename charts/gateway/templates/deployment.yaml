@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gateway.fullname" . }}
+  namespace:  {{ .Values.namespace }}
+  labels:
+    {{- include "gateway.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          command:
+          - "/gateway"
+          args:
+          - "--dapr-http-port"
+          - "{{ .Values.args.httpPort }}"
+          - "--dapr-grpc-port"
+          - "{{ .Values.args.grpcPort }}"
+          - "--dapr-internal-grpc-port"
+          - "{{ .Values.args.internalGrpcPort }}"
+          - "--control-plane-address"
+          - "dapr-api.{{ .Values.daprNamespace }}.svc.cluster.local:80"
+          - "--placement-host-address"
+          - "dapr-placement-server.{{ .Values.daprNamespace }}.svc.cluster.local:50005"
+          - "--config"
+          - ""
+          - "--log-level"
+          - "{{ .Values.args.logLevel }}"
+          - "--app-max-concurrency"
+          - "{{ .Values.args.appMaxConcurrency }}"
+          - "--sentry-address"
+          - "dapr-sentry.{{ .Values.daprNamespace }}.svc.cluster.local:80"
+          - "--enable-metrics=true"
+          - "--metrics-port"
+          - "{{ .Values.args.metricsPort }}"
+          - "--dapr-http-max-request-size"
+          - "-1"
+          {{- if .Values.args.enableMTLS }}
+          - "--enable-mtls"
+          {{- end }}
+          env:
+          - name: NAMESPACE
+            value: {{ .Values.daprNamespace }}
+          - name: SENTRY_LOCAL_IDENTITY
+            value: {{ .Values.daprNamespace }}:default

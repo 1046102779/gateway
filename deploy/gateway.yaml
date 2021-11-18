@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: dapr-tests
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      imagePullSecrets:
+      - name: gbotsecret 
+      containers:
+      - name: gateway
+        image: docker.io/xxxx/gateway:dev-linux-amd64
+        imagePullPolicy: Always
+        command:
+        - "/gateway"
+        args:
+        - "--dapr-http-port"
+        - "3500"
+        - "--dapr-grpc-port"
+        - "50001"
+        - "--dapr-internal-grpc-port"
+        - "50002"
+        - "--control-plane-address"
+        - "dapr-api.dapr-tests.svc.cluster.local:80"
+        - "--placement-host-address"
+        - "dapr-placement-server.dapr-tests.svc.cluster.local:50005"
+        - "--config"
+        - ""
+        - "--log-level"
+        - "debug"
+        - "--app-max-concurrency"
+        - "-1"
+        - "--sentry-address"
+        - "dapr-sentry.dapr-tests.svc.cluster.local:80"
+        - "--enable-metrics=true"
+        - "--metrics-port"
+        - "9090"
+        - "--dapr-http-max-request-size"
+        - "-1"
+        - "--enable-mtls"
+        env:
+        - name: NAMESPACE
+          value: dapr-tests
+        - name: SENTRY_LOCAL_IDENTITY
+          value: dapr-tests:default
